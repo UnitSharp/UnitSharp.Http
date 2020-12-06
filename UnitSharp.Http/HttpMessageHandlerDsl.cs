@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Web;
@@ -115,12 +116,54 @@ namespace UnitSharp.Http
             return new StringValues($"{value}");
         }
 
+        public static GetClause WithAuthorization(
+            this GetClause dsl,
+            Func<AuthenticationHeaderValue, bool> predicate)
+        {
+            return new GetClause(dsl.Stub, CanHandle);
+
+            bool CanHandle(HttpRequestExcerpt request)
+                => dsl.CanHandle.Invoke(request)
+                && predicate.Invoke(request.Headers.Authorization);
+        }
+
+        public static GetClause WithAuthorization(
+            this GetClause dsl,
+            string scheme,
+            string parameter)
+        {
+            return new GetClause(dsl.Stub, CanHandle);
+
+            bool CanHandle(HttpRequestExcerpt request)
+                => dsl.CanHandle.Invoke(request)
+                && request.Headers.Authorization.Scheme == scheme
+                && request.Headers.Authorization.Parameter == parameter;
+        }
+
         public static HttpMessageHandlerStub Responds(
             this GetClause dsl,
             Func<HttpRequestMessage, Task<HttpResponseMessage>> handle)
         {
             HttpMessageHandlerStub stub = dsl.Stub;
             stub.Configure(new HttpRequestHandler(dsl.CanHandle, handle));
+            return stub;
+        }
+
+        public static HttpMessageHandlerStub Responds(
+            this GetClause dsl,
+            Func<HttpRequestMessage, HttpResponseMessage> handle)
+        {
+            HttpMessageHandlerStub stub = dsl.Stub;
+            stub.Configure(new HttpRequestHandler(dsl.CanHandle, handle));
+            return stub;
+        }
+
+        public static HttpMessageHandlerStub Responds(
+            this GetClause dsl,
+            HttpResponseMessage response)
+        {
+            HttpMessageHandlerStub stub = dsl.Stub;
+            stub.Configure(new HttpRequestHandler(dsl.CanHandle, response));
             return stub;
         }
     }

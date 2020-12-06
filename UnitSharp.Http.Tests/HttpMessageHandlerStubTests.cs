@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using AutoFixture;
+using FluentAssertions;
 using Microsoft.Extensions.Primitives;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
@@ -6,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using static System.Web.HttpUtility;
 
@@ -215,6 +217,148 @@ namespace UnitSharp.Http
 
             // Assert
             actual.Should().BeSameAs(response);
+        }
+
+        [TestMethod, AutoData]
+        public async Task Responds_with_get_clause_accepts_http_response_message_function(
+            HttpMessageHandlerStub handler,
+            Uri hostAddress)
+        {
+            var response = new HttpResponseMessage();
+            handler.Get(hostAddress).Responds(_ => response);
+            var client = new HttpClient(handler) { BaseAddress = hostAddress };
+
+            HttpResponseMessage actual = await client.GetAsync(string.Empty);
+
+            actual.Should().BeSameAs(response);
+        }
+
+        [TestMethod, AutoData]
+        public async Task Responds_with_get_clause_accepts_http_response_message(
+            HttpMessageHandlerStub handler,
+            Uri hostAddress)
+        {
+            var response = new HttpResponseMessage();
+            handler.Get(hostAddress).Responds(response);
+            var client = new HttpClient(handler) { BaseAddress = hostAddress };
+
+            HttpResponseMessage actual = await client.GetAsync(string.Empty);
+
+            actual.Should().BeSameAs(response);
+        }
+
+        [TestMethod, AutoData]
+        public async Task WithAuthorization_with_predicate_excludes_invalid_authorization_header(
+            HttpMessageHandlerStub handler,
+            Uri hostAddress)
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.OK);
+            handler.Get(hostAddress).WithAuthorization(_ => false).Responds(response);
+            var client = new HttpClient(handler) { BaseAddress = hostAddress };
+
+            HttpResponseMessage actual = await client.GetAsync(string.Empty);
+
+            actual.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+
+        [TestMethod, AutoData]
+        public async Task WithAuthorization_with_predicate_includes_valid_authorization_header(
+            HttpMessageHandlerStub handler,
+            Uri hostAddress)
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.OK);
+            handler.Get(hostAddress).WithAuthorization(_ => true).Responds(response);
+            var client = new HttpClient(handler) { BaseAddress = hostAddress };
+
+            HttpResponseMessage actual = await client.GetAsync(string.Empty);
+
+            actual.Should().BeSameAs(response);
+        }
+
+        [TestMethod, AutoData]
+        public async Task WithAuthorization_with_predicate_keeps_original_predicate(
+            HttpMessageHandlerStub handler,
+            Uri hostAddress,
+            string localPath)
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.OK);
+            handler.Get(hostAddress).WithAuthorization(_ => true).Responds(response);
+            var client = new HttpClient(handler) { BaseAddress = hostAddress };
+
+            HttpResponseMessage actual = await client.GetAsync(localPath);
+
+            actual.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+
+        [TestMethod, AutoData]
+        public async Task WithAuthorization_with_value_excludes_invalid_authorization_header(
+            HttpMessageHandlerStub handler,
+            Uri hostAddress,
+            AuthenticationHeaderValue authorization,
+            Generator<string> generator)
+        {
+            // Arrange
+            string scheme = generator.First(x => x != authorization.Scheme);
+            string parameter = generator.First(x => x != authorization.Parameter);
+
+            handler.Get(hostAddress)
+                   .WithAuthorization(scheme, parameter)
+                   .Responds(new HttpResponseMessage(HttpStatusCode.OK));
+
+            var client = new HttpClient(handler)
+            {
+                BaseAddress = hostAddress,
+                DefaultRequestHeaders = { Authorization = authorization },
+            };
+
+            // Act
+            HttpResponseMessage actual = await client.GetAsync(string.Empty);
+
+            // Assert
+            actual.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+
+        [TestMethod, AutoData]
+        public async Task WithAuthorization_with_value_includes_valid_authorization_header(
+            HttpMessageHandlerStub handler,
+            Uri hostAddress,
+            string scheme,
+            string parameter)
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.OK);
+            handler.Get(hostAddress).WithAuthorization(scheme, parameter).Responds(response);
+            var authorization = new AuthenticationHeaderValue(scheme, parameter);
+            var client = new HttpClient(handler)
+            {
+                BaseAddress = hostAddress,
+                DefaultRequestHeaders = { Authorization = authorization },
+            };
+
+            HttpResponseMessage actual = await client.GetAsync(string.Empty);
+
+            actual.Should().BeSameAs(response);
+        }
+
+        [TestMethod, AutoData]
+        public async Task WithAuthorization_with_value_keeps_original_predicate(
+            HttpMessageHandlerStub handler,
+            Uri hostAddress,
+            string scheme,
+            string parameter,
+            string localPath)
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.OK);
+            handler.Get(hostAddress).WithAuthorization(scheme, parameter).Responds(response);
+            var authorization = new AuthenticationHeaderValue(scheme, parameter);
+            var client = new HttpClient(handler)
+            {
+                BaseAddress = hostAddress,
+                DefaultRequestHeaders = { Authorization = authorization },
+            };
+
+            HttpResponseMessage actual = await client.GetAsync(localPath);
+
+            actual.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
     }
 }
