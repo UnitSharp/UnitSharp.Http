@@ -1,0 +1,20 @@
+version: 0.1.{build}
+image: Visual Studio 2019
+configuration: Release
+before_build:
+- cmd: nuget restore UnitSharp.Http.sln
+build:
+  verbosity: minimal
+  project: UnitSharp.Http.sln
+after_build:
+test: off
+artifacts:
+- path: '**\*.nupkg'
+- path: '**\*.snupkg'
+deploy:
+- provider: NuGet
+  server:
+  api_key:
+    secure: UGegS5f4MuBXaQuvMtMRsmbdk8YgMx29gFiOhDA0q5yHFF7AKZ8fRJxpbgJgEDtl
+  skip_symbols: false
+  symbol_server:
