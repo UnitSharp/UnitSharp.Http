@@ -8,7 +8,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>UnitSharp.Http</PackageId>
     <Description>Provides test doubles for HttpMessageHandler.</Description>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <Authors>Gyuwon</Authors>
     <Copyright>Copyright (c) 2020 Yi Gyuwon</Copyright>
     <PackageProjectUrl>https://github.com/UnitSharp/UnitSharp.Http</PackageProjectUrl>
