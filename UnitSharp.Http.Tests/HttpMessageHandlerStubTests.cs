@@ -380,5 +380,21 @@ namespace UnitSharp.Http
             Guid[] content = await actual.Content.ReadAsAsync<Guid[]>();
             content.Should().BeEquivalentTo(value);
         }
+
+        [TestMethod, AutoData]
+        public async Task Responds_with_status_code_correctly_configures_response(
+            HttpMessageHandlerStub handler,
+            Uri hostAddress,
+            string localPath,
+            HttpStatusCode statusCode)
+        {
+            handler.Get(hostAddress, localPath).Responds(statusCode);
+            var client = new HttpClient(handler) { BaseAddress = hostAddress };
+
+            HttpResponseMessage actual = await client.GetAsync(localPath);
+
+            actual.StatusCode.Should().Be(statusCode);
+            actual.Content.Should().BeNull();
+        }
     }
 }

@@ -170,6 +170,16 @@ namespace UnitSharp.Http
             return stub;
         }
 
+        public static HttpMessageHandlerStub Responds(
+            this GetClause dsl,
+            HttpStatusCode statusCode)
+        {
+            HttpMessageHandlerStub stub = dsl.Stub;
+            var response = new HttpResponseMessage(statusCode);
+            stub.Configure(new HttpRequestHandler(dsl.CanHandle, response));
+            return stub;
+        }
+
         public static HttpMessageHandlerStub RespondsJson(
             this GetClause dsl,
             object value)
