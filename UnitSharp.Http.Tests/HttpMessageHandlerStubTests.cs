@@ -340,6 +340,21 @@ namespace UnitSharp.Http
         }
 
         [TestMethod, AutoData]
+        public async Task WithAuthorization_with_value_excludes_request_without_authorization_header(
+            HttpMessageHandlerStub handler,
+            Uri hostAddress,
+            string scheme,
+            string parameter)
+        {
+            handler.Get(hostAddress).WithAuthorization(scheme, parameter).Responds(HttpStatusCode.OK);
+            var client = new HttpClient(handler) { BaseAddress = hostAddress };
+
+            HttpResponseMessage actual = await client.GetAsync(string.Empty);
+
+            actual.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+
+        [TestMethod, AutoData]
         public async Task WithAuthorization_with_value_keeps_original_predicate(
             HttpMessageHandlerStub handler,
             Uri hostAddress,

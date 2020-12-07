@@ -139,6 +139,7 @@ namespace UnitSharp.Http
 
             bool CanHandle(HttpRequestExcerpt request)
                 => dsl.CanHandle.Invoke(request)
+                && request.Headers.Authorization != null
                 && request.Headers.Authorization.Scheme == scheme
                 && request.Headers.Authorization.Parameter == parameter;
         }
