@@ -1,11 +1,14 @@
 ﻿using Microsoft.Extensions.Primitives;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -165,6 +168,37 @@ namespace UnitSharp.Http
             HttpMessageHandlerStub stub = dsl.Stub;
             stub.Configure(new HttpRequestHandler(dsl.CanHandle, response));
             return stub;
+        }
+
+        public static HttpMessageHandlerStub RespondsJson(
+            this GetClause dsl,
+            object value)
+        {
+            HttpMessageHandlerStub stub = dsl.Stub;
+            HttpResponseMessage response = CreateJsonResponse(value);
+            stub.Configure(new HttpRequestHandler(dsl.CanHandle, response));
+            return stub;
+        }
+
+        private static HttpResponseMessage CreateJsonResponse(object value)
+        {
+            HttpContent content = CreateJsonContent(value);
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = content };
+        }
+
+        private static HttpContent CreateJsonContent(object value)
+        {
+            string json = JsonConvert.SerializeObject(value);
+            return new StringContent(json, Encoding.UTF8)
+            {
+                Headers =
+                {
+                    ContentType = new MediaTypeHeaderValue("application/json")
+                    {
+                        CharSet = "utf-8",
+                    },
+                },
+            };
         }
     }
 }

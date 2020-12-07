@@ -360,5 +360,25 @@ namespace UnitSharp.Http
 
             actual.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
+
+        [TestMethod, AutoData]
+        public async Task RespondsJson_with_get_clause_correctly_configure_response(
+            HttpMessageHandlerStub handler,
+            Uri hostAddress,
+            string localPath,
+            Guid[] value)
+        {
+            handler.Get(hostAddress, localPath).RespondsJson(value);
+            var client = new HttpClient(handler) { BaseAddress = hostAddress };
+
+            HttpResponseMessage actual = await client.GetAsync(localPath);
+
+            actual.StatusCode.Should().Be(HttpStatusCode.OK);
+            actual.Content.Should().NotBeNull();
+            actual.Content.Headers.ContentType.MediaType.Should().Be("application/json");
+            actual.Content.Headers.ContentType.CharSet.Should().Be("utf-8");
+            Guid[] content = await actual.Content.ReadAsAsync<Guid[]>();
+            content.Should().BeEquivalentTo(value);
+        }
     }
 }
