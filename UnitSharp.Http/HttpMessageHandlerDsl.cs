@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -210,6 +211,51 @@ namespace UnitSharp.Http
                     },
                 },
             };
+        }
+
+        public static HttpMessageHandlerStub RespondsStream(
+            this GetClause dsl,
+            MediaTypeHeaderValue contentType,
+            Stream content)
+        {
+            HttpMessageHandlerStub stub = dsl.Stub;
+            HttpResponseMessage response = CreateStreamResponse(contentType, content);
+            stub.Configure(new HttpRequestHandler(dsl.CanHandle, response));
+            return stub;
+        }
+
+        private static HttpResponseMessage CreateStreamResponse(
+            MediaTypeHeaderValue contentType,
+            Stream content)
+        {
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = CreateStreamContent(contentType, content),
+            };
+        }
+
+        private static StreamContent CreateStreamContent(
+            MediaTypeHeaderValue contentType,
+            Stream content)
+        {
+            return new StreamContent(content)
+            {
+                Headers =
+                {
+                    ContentType = contentType,
+                },
+            };
+        }
+
+        public static HttpMessageHandlerStub RespondsJsonStream(
+            this GetClause dsl,
+            Stream content)
+        {
+            HttpMessageHandlerStub stub = dsl.Stub;
+            var contentType = new MediaTypeHeaderValue("application/json") { CharSet = "utf-8" };
+            HttpResponseMessage response = CreateStreamResponse(contentType, content);
+            stub.Configure(new HttpRequestHandler(dsl.CanHandle, response));
+            return stub;
         }
     }
 }

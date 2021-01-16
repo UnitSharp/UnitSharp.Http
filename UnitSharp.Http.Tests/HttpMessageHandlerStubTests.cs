@@ -4,6 +4,7 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -377,7 +378,7 @@ namespace UnitSharp.Http
         }
 
         [TestMethod, AutoData]
-        public async Task RespondsJson_with_get_clause_correctly_configure_response(
+        public async Task RespondsJson_with_get_clause_correctly_configures_response(
             HttpMessageHandlerStub handler,
             Uri hostAddress,
             string localPath,
@@ -410,6 +411,44 @@ namespace UnitSharp.Http
 
             actual.StatusCode.Should().Be(statusCode);
             actual.Content.Should().BeNull();
+        }
+
+        [TestMethod, AutoData]
+        public async Task RespondsStream_with_get_clause_correctly_configures_response(
+            HttpMessageHandlerStub handler,
+            Uri hostAddress,
+            string localPath,
+            byte[] source)
+        {
+            var contentType = new MediaTypeHeaderValue("application/json") { CharSet = "utf-8" };
+            handler.Get(hostAddress, localPath).RespondsStream(contentType, new MemoryStream(source));
+            var client = new HttpClient(handler) { BaseAddress = hostAddress };
+
+            HttpResponseMessage actual = await client.GetAsync(localPath);
+
+            actual.StatusCode.Should().Be(HttpStatusCode.OK);
+            actual.Content.Headers.ContentType.Should().BeEquivalentTo(contentType);
+            byte[] data = await actual.Content.ReadAsByteArrayAsync();
+            data.Should().BeEquivalentTo(source);
+        }
+
+        [TestMethod, AutoData]
+        public async Task RespondsJsonStream_with_get_clause_correctly_configures_response(
+            HttpMessageHandlerStub handler,
+            Uri hostAddress,
+            string localPath,
+            byte[] source)
+        {
+            handler.Get(hostAddress, localPath).RespondsJsonStream(new MemoryStream(source));
+            var client = new HttpClient(handler) { BaseAddress = hostAddress };
+
+            HttpResponseMessage actual = await client.GetAsync(localPath);
+
+            actual.StatusCode.Should().Be(HttpStatusCode.OK);
+            actual.Content.Headers.ContentType.MediaType.Should().Be("application/json");
+            actual.Content.Headers.ContentType.CharSet.Should().Be("utf-8");
+            byte[] data = await actual.Content.ReadAsByteArrayAsync();
+            data.Should().BeEquivalentTo(source);
         }
     }
 }
